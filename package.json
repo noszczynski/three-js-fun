@@ -1,0 +1,9 @@
+{
+  "dependencies": {
+    "live-server": "^1.2.1",
+    "prettier": "^2.5.1"
+  },
+  "devDependencies": {
+    "eslint": "^8.10.0"
+  }
+}
