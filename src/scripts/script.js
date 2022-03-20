@@ -83,16 +83,16 @@ const handleLoad = () => {
             createDecoration(-11.3, 4, 0),
         ],
         [
-            createDecoration(0, -4, 14.5),
-            createDecoration(0, -4, -14.5),
-            createDecoration(14.5, -4, 0),
-            createDecoration(-14.5, -4, 0),
+            createDecoration(0, -4, 14.75),
+            createDecoration(0, -4, -14.75),
+            createDecoration(14.75, -4, 0),
+            createDecoration(-14.75, -4, 0),
         ],
         [
-            createDecoration(0, -4, 14.5),
-            createDecoration(0, -4, -14.5),
-            createDecoration(14.5, -4, 0),
-            createDecoration(-14.5, -4, 0),
+            createDecoration(0, -4, 14.75),
+            createDecoration(0, -4, -14.75),
+            createDecoration(14.75, -4, 0),
+            createDecoration(-14.75, -4, 0),
         ],
         [
             createDecoration(0, -11, 19),
@@ -234,15 +234,11 @@ const handleLoad = () => {
         requestAnimationFrame(animate);
     };
 
-    console.log({
-        scene,
-        camera,
-    });
-    animate(scene, camera);
+    animate();
 };
 
 // eslint-disable-next-line no-unused-vars
-const handleResize = (event) => {
+const handleResize = () => {
     if (!renderer) {
         return;
     }
