@@ -18,60 +18,147 @@
     </style>
 </head>
 <body>
-<main id="app"></main>
+<main id="app">
+    <label for="camera-x">Camera x:</label><input id="camera-x" type="number" value="0">
+    <label for="camera-y">Camera y:</label><input id="camera-y" type="number" value="0">
+    <label for="camera-z">Camera z:</label><input id="camera-z" type="number" value="30">
+</main>
 <script type="module">
-    import * as T from "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.min.js";
+    import * as T from 'https://cdn.skypack.dev/three@0.129.0/build/three.module.js';
+    import {OrbitControls} from 'https://cdn.skypack.dev/three@0.129.0/examples/jsm/controls/OrbitControls.js';
+    import {GLTFLoader} from 'https://cdn.skypack.dev/three@0.129.0/examples/jsm/loaders/GLTFLoader.js';
+
+    // camera inputs
+    const cameraXInput = document.querySelector("#camera-x");
+    const cameraYInput = document.querySelector("#camera-y");
+    const cameraZInput = document.querySelector("#camera-z");
+
+    // camera inputs values
+    let cameraXValue = cameraXInput.value;
+    let cameraYValue = cameraYInput.value;
+    let cameraZValue = cameraZInput.value;
+
+    // constants
+    //
 
     // initial variables
     const scene = new T.Scene();
     const renderer = new T.WebGLRenderer();
     const camera = new T.PerspectiveCamera(100, window.innerWidth / window.innerHeight, 1, 1000);
+    const controls = new OrbitControls(camera, renderer.domElement);
+    const loader = new GLTFLoader();
+
+    const loadObject3D = (url) => new Promise((resolve, reject) => {
+        let model = null;
+
+        loader.load(
+            // resource URL
+            url,
+
+            // onLoad callback
+            // Here the loaded data is assumed to be an object
+            function (gltf) {
+                // Add the loaded object to the scene
+                [model] = gltf.scene.children;
+                // model.scale.set(10, 10, 10);
+
+                resolve(model)
+            },
+
+            // onProgress callback
+            function (xhr) {
+                console.log((xhr.loaded / xhr.total * 100) + '% loaded: ' + url);
+            },
+
+            // onError callback
+            function (err) {
+                console.error('An error happened: ' + err.message);
+                reject(err)
+            }
+        );
+    })
 
     // set background color to white
     renderer.setClearColor(0xffffff, 1);
 
     // set initial camera position
-    camera.position.x = 0;
-    camera.position.y = 0;
-    camera.position.z = 150;
+    camera.position.set(cameraXValue, cameraYValue, cameraZValue)
 
-    const render = () => {
-        camera.rotation.z += 0.01;
-
-        renderer.render(scene, camera);
-    };
-
-    const animate = () => {
-        render();
-        requestAnimationFrame(animate);
-    };
-
-    const handleLoad = () => {
+    const handleLoad = async () => {
         document.body.appendChild(renderer.domElement);
 
         handleResize();
 
-        const box = new T.Mesh(
-            new T.BoxGeometry(30, 30, 30),
-            new T.MeshLambertMaterial({
-                color: new T.Color("#2cb600"),
-            })
-        );
+        // pivots
+        const sunOrbitPivot = new T.Object3D();
+        const sunRotationPivot = new T.Object3D();
+        const earthOrbitPivot = new T.Object3D();
+        const earthRotationPivot = new T.Object3D();
+        const moonOrbitPivot = new T.Object3D();
+        const moonRotationPivot = new T.Object3D();
 
-        const light = new T.PointLight(0xffffff, 1, 100, 0);
+        // main objects
+        const sun = await loadObject3D("./src/models/sun/scene.gltf");
+        const earth = await loadObject3D("./src/models/earth/scene.gltf");
+        const moon = await loadObject3D("./src/models/moon/scene.gltf");
 
-        light.position.set(30, 30, 30);
+        // console.log({
+        //     sun, earth, moon
+        // })
 
-        box.rotation.set(15, 15, 0);
+        // earth.position.set(0, 0, 20);
+        // moon.position.set(20, 0, 0);
 
-        box.position.x = 0;
-        box.position.y = 0;
-        box.position.z = 0;
+        // odległość Słońca od barycentrum
+        sunRotationPivot.position.x = 5;
 
-        scene.add(light);
-        scene.add(box);
+        // odległość Ziemi od Słońca
+        earthRotationPivot.position.x = 20;
+
+        // odległość Księżyca od Ziemi
+        moon.position.x = 1;
+
+        // odległość Księżyca od Słońca
+        moonRotationPivot.position.x = 20;
+
+        // moon
+        moonRotationPivot.add(moon);
+        moonOrbitPivot.add(moonRotationPivot);
+
+        // earth
+        earthRotationPivot.add(earth);
+        earthOrbitPivot.add(moonOrbitPivot);
+        earthOrbitPivot.add(earthRotationPivot);
+
+        // sun
+        sunRotationPivot.add(sun);
+        sunOrbitPivot.add(earthOrbitPivot);
+        sunOrbitPivot.add(sunRotationPivot);
+
+        // scene
+        scene.add(sunOrbitPivot);
+
+        const render = () => {
+            // cameraXValue = cameraXInput.value;
+            // cameraYValue = cameraYInput.value;
+            // cameraZValue = cameraZInput.value;
+
+            // sunOrbitPivot.rotation.y += 0.005;
+            moonRotationPivot.rotation.y += 0.05;
+            // sunRotationPivot.rotation.y -= 0.02;
+            // earthRotationPivot.rotation.y -= 0.1;
+
+            renderer.render(scene, camera);
+        };
+
+        const animate = () => {
+            render();
+            requestAnimationFrame(animate);
+        };
 
         animate();
+
+        controls.addEventListener('change', render);
     }
 
     // eslint-disable-next-line no-unused-vars
