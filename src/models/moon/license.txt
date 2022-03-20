@@ -1,0 +1,11 @@
+Model Information:
+* title:	La Luna / Viaje Virtual Guiado / 3D /  VR
+* source:	https://sketchfab.com/3d-models/la-luna-viaje-virtual-guiado-3d-vr-f2cdadece5b54fadaddd80e881e4b848
+* author:	AD&D  4D (https://sketchfab.com/add4d)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "La Luna / Viaje Virtual Guiado / 3D /  VR" (https://sketchfab.com/3d-models/la-luna-viaje-virtual-guiado-3d-vr-f2cdadece5b54fadaddd80e881e4b848) by AD&D  4D (https://sketchfab.com/add4d) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
