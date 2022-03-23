@@ -66,21 +66,22 @@
     const config = {
         light: {
             initial: {
-                x: 10,
-                y: 10,
-                z: 10,
+                x: 0,
+                y: 0,
+                z: 100,
+                intensity: 1.5,
             }
         },
         camera: {
             initial: {
                 x: 0,
                 y: 0,
-                z: 30,
+                z: 100,
             }
         },
         rotation: {
             earth: {
-                initial: 0.01,
+                initial: 0,
             },
             moon: {
                 initial: 0,
@@ -90,14 +91,8 @@
             moonToEarth: 1,
         },
         size: {
-            actual: {
-                earth: 1,
-                moon: 0.27,
-            },
-            equalization: {
-                earth: 1,
-                moon: 0.27,
-            }
+            earth: 1,
+            moon: 0.16,
         }
     }
 
@@ -140,7 +135,7 @@
 
         // initial variables
     const scene = new T.Scene();
-    const renderer = new T.WebGLRenderer();
+    const renderer = new T.WebGLRenderer({antialias: true});
     const camera = new T.PerspectiveCamera(2, window.innerWidth / window.innerHeight, 1, 1000);
     const controls = new OrbitControls(camera, renderer.domElement);
     const loader = new GLTFLoader();
@@ -175,7 +170,18 @@
         );
     })
 
-    // set background color to white
+    // set initial renderer
+    renderer.shadowMapEnabled = true;
+    renderer.shadowMapSoft = true;
+
+    renderer.shadowCameraNear = 3;
+    renderer.shadowCameraFar = camera.far;
+    renderer.shadowCameraFov = 50;
+
+    renderer.shadowMapBias = 0.0039;
+    renderer.shadowMapDarkness = 0.5;
+    renderer.shadowMapWidth = 1024;
+    renderer.shadowMapHeight = 1024;
     renderer.setClearColor(0x000000, 1);
 
     // set initial camera position
@@ -196,29 +202,45 @@
         const earth = await loadObject3D("./src/models/earth/scene.gltf");
         const moon = await loadObject3D("./src/models/moon/scene.gltf");
 
-        moon.scale.set(1, 1, 1);
-        earth.scale.set(1, 1, 1);
-        console.log(moon);
+        moon.scale.set(
+            config.size.moon,
+            config.size.moon,
+            config.size.moon
+        );
+
+        moon.position.set(-0.08, 0.08, 5);
+        moon.quaternion.set(0, 0, 0, 0);
+        moon.castShadow = true;
+
+        earth.scale.set(
+            config.size.earth,
+            config.size.earth,
+            config.size.earth
+        );
+
+        moon.receiveShadow = true;
 
         // moon
-        moon.position.set(0, 0, 0);
-        moonOrbitPivot.position.set(0, 0, 0);
-        // moonOrbitPivot.add(moon);
+        moonOrbitPivot.position.set(0, 0, 1);
+        moonOrbitPivot.add(moon);
 
         // earth
         earthRotationPivot.position.set(0, 0, 0);
         earthRotationPivot.add(moonOrbitPivot);
         earthRotationPivot.add(earth);
-        earthRotationPivot.add(moon);
 
         // lights
-        const light = new T.PointLight(0xffffff, 1);
+        const light = new T.DirectionalLight(0xffffff, config.light.initial.intensity);
 
+        light.castShadow = true;
         light.position.set(
             config.light.initial.x,
             config.light.initial.y,
             config.light.initial.z
         );
+
+        // debug
+        scene.add(new T.CameraHelper(light.shadow.camera));
 
         // scene
         scene.add(light);
@@ -231,8 +253,15 @@
                 getLightZInputValue()
             )
 
-            console.log();
             earthRotationPivot.rotation.y += getRotationEarthValue();
+
+            // debug
+            light.shadow.camera.near = 1;
+            light.shadow.camera.far = 1;
+            light.shadow.camera.left = -0.1;
+            light.shadow.camera.right = 0.1;
+            light.shadow.camera.top = 0.1;
+            light.shadow.camera.bottom = -0.1;
 
             renderer.render(scene, camera);
         };
