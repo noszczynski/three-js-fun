@@ -15,36 +15,133 @@
         body {
             background-color: white;
         }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+
+            padding: 4px;
+
+            position: absolute;
+            top: 0;
+            left: 0;
+            background-color: rgba(255, 255, 255, 1);
+        }
+
+        .controls input {
+            margin-left: 4px;
+            width: 64px;
+        }
+
+        .controls label:not(:last-child) {
+            margin-bottom: 2px;
+        }
     </style>
 </head>
 <body>
 <main id="app">
-    <label for="camera-x">Camera x:</label><input id="camera-x" type="number" value="0">
-    <label for="camera-y">Camera y:</label><input id="camera-y" type="number" value="0">
-    <label for="camera-z">Camera z:</label><input id="camera-z" type="number" value="30">
+    <div class="controls">
+        <label for="light-x">
+            Light:
+            <input id="light-x" type="number" value="0">
+            <input id="light-y" type="number" value="0">
+            <input id="light-z" type="number" value="0">
+        </label>
+        <label for="rotation-earth">
+            Earth Rotation speed:
+            <input id="rotation-earth" type="number" step="0.01" value="0.01">
+        </label>
+        <label for="test">
+            Test:
+            <input id="test" type="number" step="1" value="0">
+        </label>
+    </div>
 </main>
 <script type="module">
     import * as T from 'https://cdn.skypack.dev/three@0.129.0/build/three.module.js';
     import {OrbitControls} from 'https://cdn.skypack.dev/three@0.129.0/examples/jsm/controls/OrbitControls.js';
     import {GLTFLoader} from 'https://cdn.skypack.dev/three@0.129.0/examples/jsm/loaders/GLTFLoader.js';
 
-    // camera inputs
-    const cameraXInput = document.querySelector("#camera-x");
-    const cameraYInput = document.querySelector("#camera-y");
-    const cameraZInput = document.querySelector("#camera-z");
+    const config = {
+        light: {
+            initial: {
+                x: 10,
+                y: 10,
+                z: 10,
+            }
+        },
+        camera: {
+            initial: {
+                x: 0,
+                y: 0,
+                z: 30,
+            }
+        },
+        rotation: {
+            earth: {
+                initial: 0.01,
+            },
+            moon: {
+                initial: 0,
+            }
+        },
+        distance: {
+            moonToEarth: 1,
+        },
+        size: {
+            actual: {
+                earth: 1,
+                moon: 0.27,
+            },
+            equalization: {
+                earth: 1,
+                moon: 0.27,
+            }
+        }
+    }
 
-    // camera inputs values
-    let cameraXValue = cameraXInput.value;
-    let cameraYValue = cameraYInput.value;
-    let cameraZValue = cameraZInput.value;
+    /*** Earth ***/
 
-    // constants
-    //
+        // earth rotation input
+    const earthRotationInput = document.querySelector("#rotation-earth");
 
-    // initial variables
+    // earth initial values
+    earthRotationInput.value = config.rotation.earth.initial;
+
+    // earth getters
+    const getRotationEarthValue = () => +earthRotationInput.value;
+
+    /*** Light ***/
+
+        // light inputs
+    const lightXInput = document.querySelector("#light-x"),
+        lightYInput = document.querySelector("#light-y"),
+        lightZInput = document.querySelector("#light-z");
+
+    // light initial values
+    lightXInput.value = config.light.initial.x;
+    lightYInput.value = config.light.initial.y;
+    lightZInput.value = config.light.initial.z;
+
+    // light getters
+    const getLightXInputValue = () => lightXInput.value;
+    const getLightYInputValue = () => lightYInput.value;
+    const getLightZInputValue = () => lightZInput.value;
+
+    /*** Camera ***/
+
+        // camera inputs values
+    let cameraXValue = config.camera.initial.x,
+        cameraYValue = config.camera.initial.y,
+        cameraZValue = config.camera.initial.z;
+
+    /*** Base THREE.js variables ***/
+
+        // initial variables
     const scene = new T.Scene();
     const renderer = new T.WebGLRenderer();
-    const camera = new T.PerspectiveCamera(100, window.innerWidth / window.innerHeight, 1, 1000);
+    const camera = new T.PerspectiveCamera(2, window.innerWidth / window.innerHeight, 1, 1000);
     const controls = new OrbitControls(camera, renderer.domElement);
     const loader = new GLTFLoader();
 
@@ -79,74 +176,63 @@
     })
 
     // set background color to white
-    renderer.setClearColor(0xffffff, 1);
+    renderer.setClearColor(0x000000, 1);
 
     // set initial camera position
     camera.position.set(cameraXValue, cameraYValue, cameraZValue)
 
     const handleLoad = async () => {
+        // renderer
         document.body.appendChild(renderer.domElement);
 
+        // resize handler
         handleResize();
 
         // pivots
-        const sunOrbitPivot = new T.Object3D();
-        const sunRotationPivot = new T.Object3D();
-        const earthOrbitPivot = new T.Object3D();
         const earthRotationPivot = new T.Object3D();
         const moonOrbitPivot = new T.Object3D();
-        const moonRotationPivot = new T.Object3D();
 
         // main objects
-        const sun = await loadObject3D("./src/models/sun/scene.gltf");
         const earth = await loadObject3D("./src/models/earth/scene.gltf");
         const moon = await loadObject3D("./src/models/moon/scene.gltf");
 
-        // console.log({
-        //     sun, earth, moon
-        // })
-
-        // earth.position.set(0, 0, 20);
-        // moon.position.set(20, 0, 0);
-
-        // odległość Słońca od barycentrum
-        sunRotationPivot.position.x = 5;
-
-        // odległość Ziemi od Słońca
-        earthRotationPivot.position.x = 20;
-
-        // odległość Księżyca od Ziemi
-        moon.position.x = 1;
-
-        // odległość Księżyca od Słońca
-        moonRotationPivot.position.x = 20;
+        moon.scale.set(1, 1, 1);
+        earth.scale.set(1, 1, 1);
+        console.log(moon);
 
         // moon
-        moonRotationPivot.add(moon);
-        moonOrbitPivot.add(moonRotationPivot);
+        moon.position.set(0, 0, 0);
+        moonOrbitPivot.position.set(0, 0, 0);
+        // moonOrbitPivot.add(moon);
 
         // earth
+        earthRotationPivot.position.set(0, 0, 0);
+        earthRotationPivot.add(moonOrbitPivot);
         earthRotationPivot.add(earth);
-        earthOrbitPivot.add(moonOrbitPivot);
-        earthOrbitPivot.add(earthRotationPivot);
+        earthRotationPivot.add(moon);
 
-        // sun
-        sunRotationPivot.add(sun);
-        sunOrbitPivot.add(earthOrbitPivot);
-        sunOrbitPivot.add(sunRotationPivot);
+        // lights
+        const light = new T.PointLight(0xffffff, 1);
+
+        light.position.set(
+            config.light.initial.x,
+            config.light.initial.y,
+            config.light.initial.z
+        );
 
         // scene
-        scene.add(sunOrbitPivot);
+        scene.add(light);
+        scene.add(earthRotationPivot);
 
         const render = () => {
-            // cameraXValue = cameraXInput.value;
-            // cameraYValue = cameraYInput.value;
-            // cameraZValue = cameraZInput.value;
+            light.position.set(
+                getLightXInputValue(),
+                getLightYInputValue(),
+                getLightZInputValue()
+            )
 
-            // sunOrbitPivot.rotation.y += 0.005;
-            moonRotationPivot.rotation.y += 0.05;
-            // sunRotationPivot.rotation.y -= 0.02;
-            // earthRotationPivot.rotation.y -= 0.1;
+            console.log();
+            earthRotationPivot.rotation.y += getRotationEarthValue();
 
             renderer.render(scene, camera);
         };
