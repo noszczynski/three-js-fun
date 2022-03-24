@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <title>Adam Noszczyński</title>
     <style>
         *,
         *::after,
@@ -14,6 +14,7 @@
 
         body {
             background-color: white;
+            cursor: grab;
         }
 
         .controls {
@@ -22,10 +23,26 @@
             align-items: flex-start;
 
             padding: 4px;
+            margin: 4px;
 
             position: absolute;
             top: 0;
             left: 0;
+            background-color: rgba(255, 255, 255, 1);
+        }
+
+        .info {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+
+            padding: 4px;
+            margin: 4px;
+
+            position: absolute;
+            bottom: 0;
+            right: 0;
+
             background-color: rgba(255, 255, 255, 1);
         }
 
@@ -42,11 +59,16 @@
 <body>
 <main id="app">
     <div id="controls" class="controls"></div>
+    <div class="info">
+        <span>Drag to move</span>
+        <span>Scroll to resize</span>
+    </div>
 </main>
 <script type="module">
     import * as T from 'https://cdn.skypack.dev/three@0.129.0/build/three.module.js';
     import {OrbitControls} from 'https://cdn.skypack.dev/three@0.129.0/examples/jsm/controls/OrbitControls.js';
     import {GLTFLoader} from 'https://cdn.skypack.dev/three@0.129.0/examples/jsm/loaders/GLTFLoader.js';
+    import debounce from 'https://cdn.skypack.dev/lodash.debounce';
 
     const tabs = [
         {
@@ -137,19 +159,21 @@
             ],
         },
         {
-            id: "light-rotation",
+            id: "enable-light-marker",
             children: [
                 {
-                    step: 1,
-                    value: 0,
+                    type: 'checkbox',
+                    value: true,
                 },
+            ],
+        },
+        {
+            id: "enable-mouse-move",
+            children: [
                 {
-                    step: 1,
-                    value: 0,
-                },
-                {
-                    step: 1,
-                    value: 0,
+                    type: 'checkbox',
+                    value: true,
+                    disabled: true,
                 },
             ],
         }
@@ -168,13 +192,16 @@
         tab.setAttribute("id", `tab-${id}`);
         tab.appendChild(label)
 
-        children.forEach(({type = "number", step, value}, index) => {
+        children.forEach(({type = "number", step, value, disabled = false}, index) => {
             const input = document.createElement("input");
 
             input.setAttribute("type", type);
-            input.setAttribute("step", +step);
-            input.setAttribute("value", +value);
+            if (typeof value === "string" || typeof value === "number") input.setAttribute("value", +value);
+            else if (typeof value === "boolean") input.setAttribute("checked", value);
+            if (disabled) input.setAttribute("disabled", true);
             input.setAttribute("id", `${id}-${index}`);
+
+            if (step) input.setAttribute("step", +step);
 
             fragment.appendChild(input)
         })
@@ -259,6 +286,7 @@
         // renderer
         document.body.appendChild(renderer.domElement);
 
+        // initial free camera config
         camera.position.set(0, 128, 256);
         controls.update();
 
@@ -287,11 +315,9 @@
         moon.receiveShadow = true;
 
         // moon
-        moonOrbitPivot.position.set(0, 0, 0);
         moonOrbitPivot.add(moon);
 
         // earth
-        earthRotationPivot.position.set(0, 0, 0);
         earthRotationPivot.add(earth);
 
         // lights
@@ -305,11 +331,10 @@
         // light.shadow.camera.far = 1000; // 500 is default
 
         // debug
-        scene.add(new T.CameraHelper(light.shadow.camera));
+        const cameraHelper = new T.CameraHelper(light.shadow.camera);
 
         // scene
         scene.add(light);
-        // scene.add(ambientLight);
         scene.add(earthRotationPivot);
         scene.add(moonOrbitPivot);
 
@@ -344,14 +369,17 @@
             earth.position.set(...getInputValuesXYZ("earth-position"));
             light.position.set(...getInputValuesXYZ("light-position"));
 
-            // light.camera.left = +getInputValuesXYZ("light-rotation")[0];
-            // light.camera.right = +getInputValuesXYZ("light-rotation")[1];
-            // light.camera.top = +getInputValuesXYZ("light-rotation")[2];
+            input = document.querySelector("#enable-light-marker-0");
+
+            if (input.checked) {
+                scene.add(cameraHelper);
+            } else {
+                scene.remove(cameraHelper)
+            }
         }
 
         const render = () => {
-            refreshValuesFromManual()
-
+            refreshValuesFromManual();
             renderer.render(scene, camera);
         };
 
