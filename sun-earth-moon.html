@@ -53,8 +53,8 @@
             id: "earth-rotation",
             children: [
                 {
-                    step: 1,
-                    value: 0.01,
+                    step: 0.01,
+                    value: -0.01,
                 },
             ],
         },
@@ -62,8 +62,8 @@
             id: "moon-orbit",
             children: [
                 {
-                    step: 1,
-                    value: 0, // 0.01
+                    step: 0.01,
+                    value: 0.01,
                 },
             ],
         },
@@ -106,7 +106,7 @@
             children: [
                 {
                     step: 1,
-                    value: 8,
+                    value: 5,
                 },
             ],
         },
@@ -186,15 +186,10 @@
     controlsContainer.appendChild(controlsContainerFragment);
 
     const config = {
-        size: {
-            earth: 6,
-            moon: 1,
-        },
         shadow: {
             mapSize: 2048, // 512 default
             radius: 128,
         },
-        scale: 1,
     }
 
     /*** Base THREE.js variables ***/
@@ -205,7 +200,7 @@
     const loader = new GLTFLoader();
 
     const createSphere = () => {
-        const geometry = new T.SphereGeometry(1, 16, 16);
+        const geometry = new T.SphereGeometry(1, 64, 64);
         const material = new T.MeshLambertMaterial({color: 0xffffff});
         const mesh = new T.Mesh(geometry, material);
 
@@ -280,12 +275,6 @@
         const earth = createSphere();
         const moon = createSphere();
 
-        moon.scale.set(
-            config.size.moon,
-            config.size.moon,
-            config.size.moon
-        );
-
         moon.quaternion.set(0, 0, 0, 0);
 
         earth.castShadow = true;
@@ -293,12 +282,6 @@
 
         // earth.children[0].castShadow = true;
         // moon.children[0].castShadow = true;
-
-        earth.scale.set(
-            config.size.earth,
-            config.size.earth,
-            config.size.earth
-        );
 
         earth.receiveShadow = true;
         moon.receiveShadow = true;
@@ -312,7 +295,7 @@
         earthRotationPivot.add(earth);
 
         // lights
-        const light = new T.PointLight(0xffffff, 1);
+        const light = new T.DirectionalLight(0xffffff, 1);
 
         light.castShadow = true;
         light.shadow.mapSize.width = config.shadow.mapSize;
