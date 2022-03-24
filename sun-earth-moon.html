@@ -63,7 +63,7 @@
             children: [
                 {
                     step: 1,
-                    value: 0.01,
+                    value: 0, // 0.01
                 },
             ],
         },
@@ -89,15 +89,15 @@
             children: [
                 {
                     step: 1,
-                    value: 0,
+                    value: -0.08,
                 },
                 {
                     step: 1,
-                    value: 0,
+                    value: 0.08,
                 },
                 {
                     step: 1,
-                    value: 0,
+                    value: 10,
                 },
             ],
         },
@@ -106,29 +106,13 @@
             children: [
                 {
                     step: 1,
-                    value: 10,
-                },
-                {
-                    step: 1,
-                    value: 10,
-                },
-                {
-                    step: 1,
-                    value: 10,
+                    value: 8,
                 },
             ],
         },
         {
             id: "moon-scale",
             children: [
-                {
-                    step: 1,
-                    value: 1,
-                },
-                {
-                    step: 1,
-                    value: 1,
-                },
                 {
                     step: 1,
                     value: 1,
@@ -149,6 +133,23 @@
                 {
                     step: 1,
                     value: 100,
+                },
+            ],
+        },
+        {
+            id: "light-rotation",
+            children: [
+                {
+                    step: 1,
+                    value: 0,
+                },
+                {
+                    step: 1,
+                    value: 0,
+                },
+                {
+                    step: 1,
+                    value: 0,
                 },
             ],
         }
@@ -185,14 +186,6 @@
     controlsContainer.appendChild(controlsContainerFragment);
 
     const config = {
-        light: {
-            initial: {
-                x: 0,
-                y: 0,
-                z: 100,
-                intensity: 1,
-            }
-        },
         size: {
             earth: 6,
             moon: 1,
@@ -204,22 +197,7 @@
         scale: 1,
     }
 
-    /*** Earth ***/
-
-    /*** Moon ***/
-
-    // earth getters
-    const getRotationEarthValue = () => -0.01;
-    const getMoonOrbitValue = () => 0.01;
-
-    // light getters
-    const getLightXInputValue = () => 0;
-    const getLightYInputValue = () => 0;
-    const getLightZInputValue = () => 100;
-
     /*** Base THREE.js variables ***/
-
-    // initial variables
     const scene = new T.Scene();
     const renderer = new T.WebGLRenderer({antialias: true});
     const camera = new T.PerspectiveCamera(3, window.innerWidth / window.innerHeight, 1, 1000);
@@ -308,7 +286,6 @@
             config.size.moon
         );
 
-        moon.position.set(-0.08, 0.08, 10);
         moon.quaternion.set(0, 0, 0, 0);
 
         earth.castShadow = true;
@@ -335,7 +312,7 @@
         earthRotationPivot.add(earth);
 
         // lights
-        const light = new T.PointLight(0xffffff, config.light.initial.intensity);
+        const light = new T.PointLight(0xffffff, 1);
 
         light.castShadow = true;
         light.shadow.mapSize.width = config.shadow.mapSize;
@@ -343,12 +320,6 @@
         light.shadow.radius = config.shadow.radius;
         // light.shadow.camera.near = 0.5; // 0.5 is default
         // light.shadow.camera.far = 1000; // 500 is default
-
-        light.position.set(
-            config.light.initial.x,
-            config.light.initial.y,
-            config.light.initial.z
-        );
 
         // debug
         scene.add(new T.CameraHelper(light.shadow.camera));
@@ -359,17 +330,40 @@
         scene.add(earthRotationPivot);
         scene.add(moonOrbitPivot);
 
+        const getInputValuesXYZ = (base) => {
+            const inputs = [
+                document.querySelector(`#${base}-0`),
+                document.querySelector(`#${base}-1`),
+                document.querySelector(`#${base}-2`)
+            ];
+
+            return [
+                +inputs[0].value,
+                +inputs[1].value,
+                +inputs[2].value,
+            ]
+        }
+
         const refreshValuesFromManual = () => {
-            light.position.set(
-                getLightXInputValue(),
-                getLightYInputValue(),
-                getLightZInputValue()
-            )
+            let input = document.querySelector("#earth-rotation-0");
+            earthRotationPivot.rotation.y += +input.value;
 
-            light.position.set(0, 0, 100);
+            input = document.querySelector("#moon-orbit-0");
+            moonOrbitPivot.rotation.y += +input.value;
 
-            earthRotationPivot.rotation.y += getRotationEarthValue();
-            moonOrbitPivot.rotation.y += getMoonOrbitValue();
+            input = document.querySelector("#earth-scale-0");
+            earth.scale.set(+input.value, +input.value, +input.value);
+
+            input = document.querySelector("#moon-scale-0");
+            moon.scale.set(+input.value, +input.value, +input.value);
+
+            moon.position.set(...getInputValuesXYZ("moon-position"));
+            earth.position.set(...getInputValuesXYZ("earth-position"));
+            light.position.set(...getInputValuesXYZ("light-position"));
+
+            // light.camera.left = +getInputValuesXYZ("light-rotation")[0];
+            // light.camera.right = +getInputValuesXYZ("light-rotation")[1];
+            // light.camera.top = +getInputValuesXYZ("light-rotation")[2];
         }
 
         const render = () => {
