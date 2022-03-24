@@ -41,34 +41,148 @@
 </head>
 <body>
 <main id="app">
-    <div class="controls">
-        <div class="tab"></div>
-        <label for="light-x">
-            Light:
-            <input id="light-x" type="number" step="0.01" value="0">
-            <input id="light-y" type="number" step="0.01" value="0">
-            <input id="light-z" type="number" step="0.01" value="0">
-        </label>
-        <label for="rotation-earth">
-            Earth rotation speed:
-            <input id="rotation-earth" type="number" step="0.01" value="-0.01">
-        </label>
-        <label for="rotation-moon">
-            Moon orbital speed:
-            <input id="rotation-moon" type="number" step="0.01" value="0.01">
-        </label>
-        <label for="test-1">
-            Test values:
-            <input id="test-1" type="number" step="1" value="0">
-            <input id="test-2" type="number" step="1" value="0">
-            <input id="test-3" type="number" step="1" value="100">
-        </label>
-    </div>
+    <div id="controls" class="controls"></div>
 </main>
 <script type="module">
     import * as T from 'https://cdn.skypack.dev/three@0.129.0/build/three.module.js';
     import {OrbitControls} from 'https://cdn.skypack.dev/three@0.129.0/examples/jsm/controls/OrbitControls.js';
     import {GLTFLoader} from 'https://cdn.skypack.dev/three@0.129.0/examples/jsm/loaders/GLTFLoader.js';
+
+    const tabs = [
+        {
+            id: "earth-rotation",
+            children: [
+                {
+                    step: 1,
+                    value: 0.01,
+                },
+            ],
+        },
+        {
+            id: "moon-orbit",
+            children: [
+                {
+                    step: 1,
+                    value: 0.01,
+                },
+            ],
+        },
+        {
+            id: "earth-position",
+            children: [
+                {
+                    step: 1,
+                    value: 0,
+                },
+                {
+                    step: 1,
+                    value: 0,
+                },
+                {
+                    step: 1,
+                    value: 0,
+                },
+            ],
+        },
+        {
+            id: "moon-position",
+            children: [
+                {
+                    step: 1,
+                    value: 0,
+                },
+                {
+                    step: 1,
+                    value: 0,
+                },
+                {
+                    step: 1,
+                    value: 0,
+                },
+            ],
+        },
+        {
+            id: "earth-scale",
+            children: [
+                {
+                    step: 1,
+                    value: 10,
+                },
+                {
+                    step: 1,
+                    value: 10,
+                },
+                {
+                    step: 1,
+                    value: 10,
+                },
+            ],
+        },
+        {
+            id: "moon-scale",
+            children: [
+                {
+                    step: 1,
+                    value: 1,
+                },
+                {
+                    step: 1,
+                    value: 1,
+                },
+                {
+                    step: 1,
+                    value: 1,
+                },
+            ],
+        },
+        {
+            id: "light-position",
+            children: [
+                {
+                    step: 1,
+                    value: 0,
+                },
+                {
+                    step: 1,
+                    value: 0,
+                },
+                {
+                    step: 1,
+                    value: 100,
+                },
+            ],
+        }
+    ];
+
+    const controlsContainer = document.querySelector("#controls");
+    const controlsContainerFragment = document.createDocumentFragment();
+
+    tabs.forEach(({id, children}) => {
+        const tab = document.createElement("div");
+        const fragment = document.createDocumentFragment();
+        const label = document.createElement("label")
+
+        label.innerHTML = id + ":\t";
+
+        tab.setAttribute("id", `tab-${id}`);
+        tab.appendChild(label)
+
+        children.forEach(({type = "number", step, value}, index) => {
+            const input = document.createElement("input");
+
+            input.setAttribute("type", type);
+            input.setAttribute("step", +step);
+            input.setAttribute("value", +value);
+            input.setAttribute("id", `${id}-${index}`);
+
+            fragment.appendChild(input)
+        })
+
+        tab.appendChild(fragment);
+        controlsContainerFragment.appendChild(tab);
+    });
+
+    controlsContainer.appendChild(controlsContainerFragment);
 
     const config = {
         light: {
@@ -79,25 +193,8 @@
                 intensity: 1,
             }
         },
-        camera: {
-            initial: {
-                x: 0,
-                y: 0,
-                z: 100,
-            }
-        },
-        rotation: {
-            earth: {
-                initial: 0.002,
-                step: 0.001,
-            },
-            moon: {
-                initial: 0.01,
-                step: 0.001,
-            }
-        },
         size: {
-            earth: 8,
+            earth: 6,
             moon: 1,
         },
         shadow: {
@@ -109,64 +206,16 @@
 
     /*** Earth ***/
 
-        // earth rotation input
-    const earthRotationInput = document.querySelector("#rotation-earth");
-
-    // earth initial values
-    earthRotationInput.value = config.rotation.earth.initial;
-    earthRotationInput.step = config.rotation.earth.step;
-
     /*** Moon ***/
-        // moon rotation input
-    const moonOrbitInput = document.querySelector("#rotation-moon");
-
-    // moon initial values
-    moonOrbitInput.value = config.rotation.moon.initial;
-    moonOrbitInput.step = config.rotation.moon.step;
-
 
     // earth getters
-    const getRotationEarthValue = () => +earthRotationInput.value;
-    const getMoonOrbitValue = () => +moonOrbitInput.value;
-
-    /*** Light ***/
-
-        // light inputs
-    const lightXInput = document.querySelector("#light-x"),
-        lightYInput = document.querySelector("#light-y"),
-        lightZInput = document.querySelector("#light-z");
-
-    // light initial values
-    lightXInput.value = config.light.initial.x;
-    lightYInput.value = config.light.initial.y;
-    lightZInput.value = config.light.initial.z;
+    const getRotationEarthValue = () => -0.01;
+    const getMoonOrbitValue = () => 0.01;
 
     // light getters
-    const getLightXInputValue = () => lightXInput.value;
-    const getLightYInputValue = () => lightYInput.value;
-    const getLightZInputValue = () => lightZInput.value;
-
-    // test getters
-    const getTest1Value = () => {
-        const el = document.querySelector("#test-1");
-        return el.value;
-    }
-    const getTest2Value = () => {
-        const el = document.querySelector("#test-2");
-        return el.value;
-    }
-    const getTest3Value = () => {
-        const el = document.querySelector("#test-3");
-        return el.value;
-    }
-
-
-    /*** Camera ***/
-
-        // camera inputs values
-    let cameraXValue = config.camera.initial.x,
-        cameraYValue = config.camera.initial.y,
-        cameraZValue = config.camera.initial.z;
+    const getLightXInputValue = () => 0;
+    const getLightYInputValue = () => 0;
+    const getLightZInputValue = () => 100;
 
     /*** Base THREE.js variables ***/
 
@@ -178,7 +227,7 @@
     const loader = new GLTFLoader();
 
     const createSphere = () => {
-        const geometry = new T.SphereGeometry(1, 32, 32);
+        const geometry = new T.SphereGeometry(1, 16, 16);
         const material = new T.MeshLambertMaterial({color: 0xffffff});
         const mesh = new T.Mesh(geometry, material);
 
@@ -231,7 +280,7 @@
     renderer.setClearColor(0x000000, 1);
 
     // set initial camera position
-    camera.position.set(cameraXValue, cameraYValue, cameraZValue)
+    camera.position.set(0, 0, 100);
 
     const handleLoad = async () => {
         // renderer
@@ -317,7 +366,7 @@
                 getLightZInputValue()
             )
 
-            light.position.set(getTest1Value(), getTest2Value(), getTest3Value());
+            light.position.set(0, 0, 100);
 
             earthRotationPivot.rotation.y += getRotationEarthValue();
             moonOrbitPivot.rotation.y += getMoonOrbitValue();
