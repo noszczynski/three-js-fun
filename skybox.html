@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Adam Noszczyński</title>
+    <style>
+        *,
+        *::after,
+        *::before {
+            box-sizing: border-box;
+            padding: 0;
+            margin: 0;
+        }
+
+        body {
+            background-color: white;
+            cursor: grab;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+
+            padding: 4px;
+            margin: 4px;
+
+            position: absolute;
+            top: 0;
+            left: 0;
+            background-color: rgba(255, 255, 255, 1);
+        }
+
+        .info {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+
+            padding: 4px;
+            margin: 4px;
+
+            position: absolute;
+            bottom: 0;
+            right: 0;
+
+            background-color: rgba(255, 255, 255, 1);
+        }
+
+        .controls input {
+            margin-left: 4px;
+            width: 64px;
+        }
+
+        .controls label:not(:last-child) {
+            margin-bottom: 2px;
+        }
+    </style>
+</head>
+<body>
+<main id="app">
+    <div id="controls" class="controls"></div>
+    <div class="info">
+        <span>Drag to move</span>
+        <span>Scroll to resize</span>
+    </div>
+</main>
+<script type="module">
+    import * as T from 'https://cdn.skypack.dev/three@0.129.0/build/three.module.js';
+    import {OrbitControls} from 'https://cdn.skypack.dev/three@0.129.0/examples/jsm/controls/OrbitControls.js';
+    import random from 'https://cdn.skypack.dev/lodash.random';
+
+    /*** Tabs start ***/
+
+    const tabs = [
+        {
+            id: "sample",
+            children: [
+                {
+                    step: 0.01,
+                    value: 0,
+                },
+            ],
+        },
+    ];
+
+    const controlsContainer = document.querySelector("#controls");
+    const controlsContainerFragment = document.createDocumentFragment();
+
+    tabs.forEach(({id, children}) => {
+        const tab = document.createElement("div");
+        const fragment = document.createDocumentFragment();
+        const label = document.createElement("label")
+
+        label.innerHTML = id + ":\t";
+
+        tab.setAttribute("id", `tab-${id}`);
+        tab.appendChild(label)
+
+        children.forEach(({type = "number", step, value, disabled = false}, index) => {
+            const input = document.createElement("input");
+
+            input.setAttribute("type", type);
+            if (typeof value === "string" || typeof value === "number") input.setAttribute("value", +value);
+            else if (typeof value === "boolean") input.setAttribute("checked", value);
+            if (disabled) input.setAttribute("disabled", true);
+            input.setAttribute("id", `${id}-${index}`);
+
+            if (step) input.setAttribute("step", +step);
+
+            fragment.appendChild(input)
+        })
+
+        tab.appendChild(fragment);
+        controlsContainerFragment.appendChild(tab);
+    });
+
+    controlsContainer.appendChild(controlsContainerFragment);
+
+    /*** Tabs end ***/
+
+    const config = {}
+
+    /*** Base THREE.js variables ***/
+    const scene = new T.Scene();
+    const renderer = new T.WebGLRenderer({antialias: true});
+    const camera = new T.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 45, 30000);
+    const controls = new OrbitControls(camera, renderer.domElement);
+
+    controls.minDistance = 500;
+    // controls.maxDistance = 1500;
+
+    const createSkybox = () => {
+        const skyboxGeo = new T.BoxGeometry(10000, 10000, 10000);
+        const url = "src/assets/lab_03";
+        const urlSuffix = "/mystic_";
+
+        const materials = [];
+
+        const textures = {
+            ft: new T.TextureLoader().load(`${url}${urlSuffix}ft.jpg`),
+            bk: new T.TextureLoader().load(`${url}${urlSuffix}bk.jpg`),
+            up: new T.TextureLoader().load(`${url}${urlSuffix}up.jpg`),
+            dn: new T.TextureLoader().load(`${url}${urlSuffix}dn.jpg`),
+            rt: new T.TextureLoader().load(`${url}${urlSuffix}rt.jpg`),
+            lf: new T.TextureLoader().load(`${url}${urlSuffix}lf.jpg`),
+        }
+
+        for (const [key, value] of Object.entries(textures)) {
+            materials.push(new T.MeshBasicMaterial({map: value}));
+        }
+
+        materials.forEach(material => {
+            material.side = T.BackSide;
+        })
+
+        return new T.Mesh(skyboxGeo, materials);
+    }
+
+    const createBox = (material, x, y, z) => {
+        const geometry = new T.BoxGeometry(100, 100, 100);
+        // const mirrorCamera = new T.CubeCamera(0.1, 5000, new T.WebGLCubeRenderTarget());
+
+        // scene.add(mirrorCamera);
+        // material.envMap = mirrorCamera.renderTarget;
+
+        const box = new T.Mesh(geometry, material);
+
+        box.position.set(x, y, z);
+        // mirrorCamera.position = box.position;
+
+        return box;
+    }
+
+    const handleLoad = async () => {
+        // renderer
+        document.body.appendChild(renderer.domElement);
+
+        // initial free camera config
+        camera.position.set(-900, -200, -900);
+        controls.update();
+
+        // resize handler
+        handleResize();
+
+        /*** Lights ***/
+        const light = new T.PointLight(0xffffff, 1);
+        light.position.set(-900, -200, -900);
+
+        /*** Boxes ***/
+        const boxes = [
+            createBox(new T.MeshBasicMaterial({ color: 0x111111 }), 500, 0, 0),
+            createBox(new T.MeshLambertMaterial({ color: 0x111111 }), 300, 0, 0),
+            createBox(new T.MeshLambertMaterial({ color: 0x111111 }), 100, 0, 0),
+            createBox(new T.MeshNormalMaterial(), -100, 0, 0),
+            createBox(new T.MeshPhongMaterial({ color: 0x111111 }), -300, 0, 0),
+            createBox(new T.MeshStandardMaterial({ color: 0x111111 }), -500, 0, 0),
+        ]
+
+        /*** Pivots for boxes ***/
+        const pivots = [];
+
+        boxes.forEach(box => {
+            const pivot = new T.Object3D();
+            pivot.add(box);
+
+            pivots.push(pivot);
+        })
+
+        /*** Scene ***/
+        scene.add(createSkybox());
+        scene.add(light);
+
+        pivots.forEach(pivot => {
+            scene.add(pivot);
+        });
+
+        const refreshValuesFromManual = () => {
+            //
+        }
+
+        const render = () => {
+            refreshValuesFromManual();
+            renderer.render(scene, camera);
+        };
+
+        const animate = () => {
+            render();
+            requestAnimationFrame(animate);
+        };
+
+        animate();
+
+        controls.addEventListener('change', render);
+    }
+
+    // eslint-disable-next-line no-unused-vars
+    const handleResize = () => {
+        if (!renderer) {
+            return;
+        }
+
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    };
+
+    window.addEventListener("load", handleLoad);
+    window.addEventListener("resize", handleResize);
+
+</script>
+</body>
+</html>

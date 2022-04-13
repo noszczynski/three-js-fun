@@ -2,14 +2,42 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <title>Adam Noszczyński</title>
     <link rel="stylesheet" type="text/css" href="src/style/style.css">
+    <style>
+        *, *::after, *::before {
+            box-sizing: border-box;
+        }
+
+        html {
+            font-family: Arial, sans-serif;
+        }
+
+        main {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            gap: 1rem;
+        }
+
+        a {
+            background-color: bisque;
+            padding: 2rem;
+            text-decoration: none;
+            color: #000;
+        }
+
+        a:hover, a:active, a:focus {
+            background-color: antiquewhite;
+        }
+    </style>
 </head>
 <body>
     <main id="app">
-        <a href="shadow.html">Projekt światło/cień</a>
+        <a href="three.html">Lab 01</a>
+        <a href="shadow.html">Lab 02</a>
+        <a href="skybox.html">Lab 03</a>
     </main>
-    <script type="module" src="src/scripts/three.js"></script>
-    <script type="module" src="src/scripts/script.js"></script>
 </body>
 </html>
