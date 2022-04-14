@@ -122,13 +122,16 @@
         renderer = new T.WebGLRenderer({antialias: true}),
         camera = new T.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 45, 30000),
         controls = new OrbitControls(camera, renderer.domElement),
-        loader = new T.TextureLoader(),
-        cubeRenderTarget = new T.WebGLCubeRenderTarget(256, {
+        loader = new T.TextureLoader()
+
+    const createElement = (material) => {
+        const cubeRenderTarget = new T.WebGLCubeRenderTarget(256, {
             generateMipmaps: true,
             minFilter: T.LinearMipmapLinearFilter
         });
+        cubeRenderTarget.texture.type = T.HalfFloatType;
+        material.envMap = cubeRenderTarget.texture;
 
-    const createElement = (material) => {
         // const geometry = new T.BoxGeometry(100, 100, 100);
         // const geometry = new T.IcosahedronGeometry(100, 2);
         const geometry = new T.SphereGeometry(100, 16, 16);
@@ -152,7 +155,6 @@
         {
             ...createElement(new T.MeshStandardMaterial({
                 color: 0xffffff,
-                envMap: cubeRenderTarget.texture,
                 roughness: 0.05,
                 metalness: 1
             })),
@@ -166,15 +168,14 @@
             })),
             position: position(0, 0, 0),
             render: function (time) {
-                this.element.position.x = Math.cos(time) * 100 + this.position.x;
-                this.element.position.y = Math.sin(time) * 100 + this.position.y;
-                this.element.position.z = Math.sin(time) * 100 + this.position.z;
+                this.element.position.x = Math.cos(time) * 120 + this.position.x;
+                this.element.position.y = Math.sin(time) * 120 + this.position.y;
+                this.element.position.z = Math.sin(time) * 120 + this.position.z;
             }
         },
         {
             ...createElement(new T.MeshStandardMaterial({
                 color: 0xffffff,
-                envMap: cubeRenderTarget.texture,
                 roughness: 0.05,
                 metalness: 1
             })),
@@ -186,8 +187,6 @@
     // renderer.setSize( window.innerWidth, window.innerHeight );
     // renderer.outputEncoding = T.sRGBEncoding;
     // renderer.toneMapping = T.ACESFilmicToneMapping;
-
-    cubeRenderTarget.texture.type = T.HalfFloatType;
 
     controls.minDistance = 500;
     // controls.maxDistance = 1500;
