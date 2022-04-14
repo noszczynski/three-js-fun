@@ -67,7 +67,6 @@
 <script type="module">
     import * as T from 'https://cdn.skypack.dev/three@0.129.0/build/three.module.js';
     import {OrbitControls} from 'https://cdn.skypack.dev/three@0.129.0/examples/jsm/controls/OrbitControls.js';
-    import random from 'https://cdn.skypack.dev/lodash.random';
 
     /*** Tabs start ***/
 
@@ -118,16 +117,88 @@
 
     /*** Tabs end ***/
 
-    const config = {}
-
     /*** Base THREE.js variables ***/
-    const scene = new T.Scene();
-    const renderer = new T.WebGLRenderer({antialias: true});
-    const camera = new T.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 45, 30000);
-    const controls = new OrbitControls(camera, renderer.domElement);
+    const scene = new T.Scene(),
+        renderer = new T.WebGLRenderer({antialias: true}),
+        camera = new T.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 45, 30000),
+        controls = new OrbitControls(camera, renderer.domElement),
+        loader = new T.TextureLoader(),
+        cubeRenderTarget = new T.WebGLCubeRenderTarget(256, {
+            generateMipmaps: true,
+            minFilter: T.LinearMipmapLinearFilter
+        });
+
+    const createElement = (material) => {
+        // const geometry = new T.BoxGeometry(100, 100, 100);
+        // const geometry = new T.IcosahedronGeometry(100, 2);
+        const geometry = new T.SphereGeometry(100, 16, 16);
+        const element = new T.Mesh(geometry, material);
+        const camera = new T.CubeCamera(1, 1000, cubeRenderTarget);
+        const pivot = new T.Object3D();
+
+        pivot.add(element, camera);
+
+        return {
+            element,
+            camera,
+            pivot,
+        }
+    }
+
+    const position = (x, y, z) => ({x, y, z})
+
+    /*** ELEMENTS ***/
+    const elements = [
+        {
+            ...createElement(new T.MeshStandardMaterial({
+                color: 0xffffff,
+                envMap: cubeRenderTarget.texture,
+                roughness: 0.05,
+                metalness: 1
+            })),
+            position: position(-300, 0, 0)
+        },
+        {
+            ...createElement(new T.MeshStandardMaterial({
+                color: 0xffffff,
+                roughness: 0.1,
+                metalness: 0
+            })),
+            position: position(0, 0, 0),
+            render: function (time) {
+                this.element.position.x = Math.cos(time) * 100 + this.position.x;
+                this.element.position.y = Math.sin(time) * 100 + this.position.y;
+                this.element.position.z = Math.sin(time) * 100 + this.position.z;
+            }
+        },
+        {
+            ...createElement(new T.MeshStandardMaterial({
+                color: 0xffffff,
+                envMap: cubeRenderTarget.texture,
+                roughness: 0.05,
+                metalness: 1
+            })),
+            position: position(300, 0, 0)
+        },
+    ];
+
+    // renderer.setPixelRatio( window.devicePixelRatio );
+    // renderer.setSize( window.innerWidth, window.innerHeight );
+    // renderer.outputEncoding = T.sRGBEncoding;
+    // renderer.toneMapping = T.ACESFilmicToneMapping;
+
+    cubeRenderTarget.texture.type = T.HalfFloatType;
 
     controls.minDistance = 500;
     // controls.maxDistance = 1500;
+
+    const customTextureLoader = (texture) => {
+        texture.mapping = T.EquirectangularReflectionMapping;
+
+        scene.background = texture;
+        scene.environment = texture;
+
+    }
 
     const createSkybox = () => {
         const skyboxGeo = new T.BoxGeometry(10000, 10000, 10000);
@@ -137,12 +208,12 @@
         const materials = [];
 
         const textures = {
-            ft: new T.TextureLoader().load(`${url}${urlSuffix}ft.jpg`),
-            bk: new T.TextureLoader().load(`${url}${urlSuffix}bk.jpg`),
-            up: new T.TextureLoader().load(`${url}${urlSuffix}up.jpg`),
-            dn: new T.TextureLoader().load(`${url}${urlSuffix}dn.jpg`),
-            rt: new T.TextureLoader().load(`${url}${urlSuffix}rt.jpg`),
-            lf: new T.TextureLoader().load(`${url}${urlSuffix}lf.jpg`),
+            ft: loader.load(`${url}${urlSuffix}ft.jpg`, customTextureLoader),
+            bk: loader.load(`${url}${urlSuffix}bk.jpg`, customTextureLoader),
+            up: loader.load(`${url}${urlSuffix}up.jpg`, customTextureLoader),
+            dn: loader.load(`${url}${urlSuffix}dn.jpg`, customTextureLoader),
+            rt: loader.load(`${url}${urlSuffix}rt.jpg`, customTextureLoader),
+            lf: loader.load(`${url}${urlSuffix}lf.jpg`, customTextureLoader),
         }
 
         for (const [key, value] of Object.entries(textures)) {
@@ -156,23 +227,13 @@
         return new T.Mesh(skyboxGeo, materials);
     }
 
-    const createBox = (material, x, y, z) => {
-        const geometry = new T.BoxGeometry(100, 100, 100);
-        // const mirrorCamera = new T.CubeCamera(0.1, 5000, new T.WebGLCubeRenderTarget());
-
-        // scene.add(mirrorCamera);
-        // material.envMap = mirrorCamera.renderTarget;
-
-        const box = new T.Mesh(geometry, material);
-
-        box.position.set(x, y, z);
-        // mirrorCamera.position = box.position;
-
-        return box;
-    }
-
     const handleLoad = async () => {
-        // renderer
+        /*** Renderer ***/
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setAnimationLoop(animate);
+        // renderer.outputEncoding = T.sRGBEncoding;
+        // renderer.toneMapping = T.ACESFilmicToneMapping;
         document.body.appendChild(renderer.domElement);
 
         // initial free camera config
@@ -183,55 +244,60 @@
         handleResize();
 
         /*** Lights ***/
-        const light = new T.PointLight(0xffffff, 1);
-        light.position.set(-900, -200, -900);
+        // const light = new T.PointLight(0xffffff, 1);
+        // light.position.set(-900, -200, -900);
+        // scene.add(light);
 
-        /*** Boxes ***/
-        const boxes = [
-            createBox(new T.MeshBasicMaterial({ color: 0x111111 }), 500, 0, 0),
-            createBox(new T.MeshLambertMaterial({ color: 0x111111 }), 300, 0, 0),
-            createBox(new T.MeshLambertMaterial({ color: 0x111111 }), 100, 0, 0),
-            createBox(new T.MeshNormalMaterial(), -100, 0, 0),
-            createBox(new T.MeshPhongMaterial({ color: 0x111111 }), -300, 0, 0),
-            createBox(new T.MeshStandardMaterial({ color: 0x111111 }), -500, 0, 0),
-        ]
+        elements.forEach(({pivot, element, camera, position}) => {
+            element.position.set(position.x, position.y, position.z);
+            camera.position.copy(element.position);
 
-        /*** Pivots for boxes ***/
-        const pivots = [];
-
-        boxes.forEach(box => {
-            const pivot = new T.Object3D();
-            pivot.add(box);
-
-            pivots.push(pivot);
-        })
-
-        /*** Scene ***/
-        scene.add(createSkybox());
-        scene.add(light);
-
-        pivots.forEach(pivot => {
             scene.add(pivot);
         });
 
-        const refreshValuesFromManual = () => {
-            //
-        }
 
-        const render = () => {
-            refreshValuesFromManual();
-            renderer.render(scene, camera);
-        };
-
-        const animate = () => {
-            render();
-            requestAnimationFrame(animate);
-        };
+        /*** Scene ***/
+        scene.add(createSkybox());
 
         animate();
 
         controls.addEventListener('change', render);
     }
+
+    const getRandomIntInclusive = (min, max) => {
+        min = Math.ceil(min);
+        max = Math.floor(max);
+
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    console.table(elements);
+
+    const render = (msTime) => {
+        const time = msTime / 1000;
+
+        elements.forEach((element) => {
+            element.camera.update(renderer, scene);
+
+            if (element.render) {
+                element.render(time);
+            } else {
+                element.element.rotation.x += 0.02;
+                element.element.rotation.y += 0.02;
+
+                element.element.position.x = Math.cos(time) * 30 + element.position.x;
+                element.element.position.y = Math.sin(time) * 30 + element.position.y;
+                element.element.position.z = Math.sin(time) * 30 + element.position.z;
+            }
+        });
+
+        renderer.render(scene, camera);
+    };
+
+    const animate = (msTime) => {
+        render(msTime);
+        // requestAnimationFrame(animate);
+    };
 
     // eslint-disable-next-line no-unused-vars
     const handleResize = () => {
